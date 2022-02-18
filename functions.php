@@ -309,7 +309,7 @@ function add_project_portfolio()
                     </div>
                 </div>
 
-                <div class="row">
+                <div class="row protfolio-grid-info-main">
                     <?php
                     $post_type1 = 'project';
                     $taxonomy1 = 'categories';
@@ -441,36 +441,45 @@ function add_custom_home_project()
 /* Related Post Code */
 add_shortcode('related-post', 'add_related_post');
 function add_related_post()
-{
-    $related = get_posts(
-        array(
-            'category__in' => wp_get_post_categories($post->ID),
-            'numberposts' => 3,
-            'post_type' => 'project',
-            'post__not_in' => array($post->ID)
-        )
-    );
-    $terms_related = get_terms(array(
-        'taxonomy' => 'categories',
-        'hide_empty' => false
-    ));
-    foreach ($terms_related as $related_term) {
-        $related_cat_related = $related_term->name;
-    }
+{?>
+<div class="related-info-main">
+    <?php 
+            $post_type_home_related = 'project';
+            $taxonomy_home_related = 'categories';
+
+            $args_home_related = [
+                'post_type' => $post_type_home_related,
+                'hierarchical' => false,
+                "orderby" => "date",
+                "order" => "DESC",
+                'posts_per_page' => 3
+            ];
+
+            $querys_home_related = new WP_Query($args_home_related);
+            //echo '<pre>';
+            //print_r($querys_home_related);die;
+            while ($querys_home_related->have_posts()) {
+                $querys_home_related->the_post();
+
+                $terms_home_related = get_the_terms($post->ID, $taxonomy_home_related);
+                $categories_proj_home_related = [];
+
+                foreach ($terms_home_related as $category_home_related) {
+                    //$categories_proj_home_related = $category_home_related->slug;
+                    $categories_proj_home_related_name = $category_home_related->name;
+                }
 ?>
-    <div class="related-info-main">
-        <?php if ($related) foreach ($related as $related_post) {
-            setup_postdata($related_post);
-            $char_limit = 100; //character limit
-            $content = $related_post->post_content; //contents saved in a variable
-        ?>
+    
+
             <div class="related-detail">
-                <?php $url_relate = wp_get_attachment_url(get_post_thumbnail_id($related_post->ID), 'thumbnail'); ?>
-                <a href="<?php the_permalink(); ?>"><img class="img-fluid" src="<?php echo $url_relate ?>" alt=""></a>
-                <a class="related-category-info" href="<?php the_permalink(); ?>"><?php echo $related_cat_related; ?></a>
-                <a class="related-title-info" href="<?php the_permalink() ?>"><?php echo $related_post->post_title; ?></a>
-                <p><?php echo substr(strip_tags($content), 0, $char_limit); ?></p>
+            <?php $url = wp_get_attachment_url(get_post_thumbnail_id($post->ID), 'thumbnail'); ?>
+                <a href="<?php the_permalink(); ?>"><img class="img-fluid" src="<?php echo $url ?>" alt=""></a>
+                <div class="content-main-item">
+                <!--<a class="related-category-info" href="<?php //the_permalink(); ?>">--><?php echo $categories_proj_home_related_name; ?><!--</a>-->
+                <h5 class="related-title-info" href="<?php the_permalink() ?>"><?php echo get_the_title(); ?></h5>
+                <p><?php echo get_excerpt(100); ?></p>
                 <a href="<?php the_permalink(); ?>" class="btn btn-outline-primary text-black custom-padding related-info">Read More <i aria-hidden="true" class="icon icon-arrow-right pl-2"></i></a>
+                </div>
             </div>
         <?php }
         wp_reset_postdata(); ?>
@@ -488,7 +497,7 @@ function add_industries_info()
 { ?>
     <section class="indestries-we">
         <div class="w-100 mb-50">
-            <h6 class="mb-10">Industries</h6>
+            <h5 class="mb-10">Industries</h5>
             <div class="slider-header ">
                 <h2 class="w-30">We construct </br>commercial spaces </br>across all sectors</h2>
             </div>
@@ -545,6 +554,10 @@ function add_industries_info()
                     items: 2,
                     margin: 20
                 },
+                820: {
+                    items: 2,
+                    margin: 20
+                },
                 1000: {
                     items: 2,
                     margin: 20
@@ -562,9 +575,141 @@ function add_industries_info()
                     items: 3,
                 },
                 1800: {
-                    items: 4,
+                    items: 3,
                 }
             }
         })
     </script>
 <?php }
+
+// Add Meta Box to post
+add_action( 'add_meta_boxes', 'multi_media_uploader_meta_box' );
+
+function multi_media_uploader_meta_box() {
+	add_meta_box( 'my-post-box', 'Media Field', 'multi_media_uploader_meta_box_func', 'project', 'normal', 'high' );
+}
+
+function multi_media_uploader_meta_box_func($post) {
+	$banner_img = get_post_meta($post->ID,'post_banner_img',true);
+	?>
+	<style type="text/css">
+		.multi-upload-medias ul li .delete-img { position: absolute; right: 3px; top: 2px; background: aliceblue; border-radius: 50%; cursor: pointer; font-size: 14px; line-height: 20px; color: red; }
+		.multi-upload-medias ul li { width: 120px; display: inline-block; vertical-align: middle; margin: 5px; position: relative; }
+		.multi-upload-medias ul li img { width: 100%; }
+	</style>
+
+	<table cellspacing="10" cellpadding="10">
+		<tr>
+			<td>Banner Image</td>
+			<td>
+				<?php echo multi_media_uploader_field( 'post_banner_img', $banner_img ); ?>
+			</td>
+		</tr>
+	</table>
+
+	<script type="text/javascript">
+		jQuery(function($) {
+
+			$('body').on('click', '.wc_multi_upload_image_button', function(e) {
+				e.preventDefault();
+
+				var button = $(this),
+				custom_uploader = wp.media({
+					title: 'Insert image',
+					button: { text: 'Use this image' },
+					multiple: true 
+				}).on('select', function() {
+					var attech_ids = '';
+					attachments
+					var attachments = custom_uploader.state().get('selection'),
+					attachment_ids = new Array(),
+					i = 0;
+					attachments.each(function(attachment) {
+						attachment_ids[i] = attachment['id'];
+						attech_ids += ',' + attachment['id'];
+						if (attachment.attributes.type == 'image') {
+							$(button).siblings('ul').append('<li data-attechment-id="' + attachment['id'] + '"><a href="' + attachment.attributes.url + '" target="_blank"><img class="true_pre_image" src="' + attachment.attributes.url + '" /></a><i class=" dashicons dashicons-no delete-img"></i></li>');
+						} else {
+							$(button).siblings('ul').append('<li data-attechment-id="' + attachment['id'] + '"><a href="' + attachment.attributes.url + '" target="_blank"><img class="true_pre_image" src="' + attachment.attributes.icon + '" /></a><i class=" dashicons dashicons-no delete-img"></i></li>');
+						}
+
+						i++;
+					});
+
+					var ids = $(button).siblings('.attechments-ids').attr('value');
+					if (ids) {
+						var ids = ids + attech_ids;
+						$(button).siblings('.attechments-ids').attr('value', ids);
+					} else {
+						$(button).siblings('.attechments-ids').attr('value', attachment_ids);
+					}
+					$(button).siblings('.wc_multi_remove_image_button').show();
+				})
+				.open();
+			});
+
+			$('body').on('click', '.wc_multi_remove_image_button', function() {
+				$(this).hide().prev().val('').prev().addClass('button').html('Add Media');
+				$(this).parent().find('ul').empty();
+				return false;
+			});
+
+		});
+
+		jQuery(document).ready(function() {
+			jQuery(document).on('click', '.multi-upload-medias ul li i.delete-img', function() {
+				var ids = [];
+				var this_c = jQuery(this);
+				jQuery(this).parent().remove();
+				jQuery('.multi-upload-medias ul li').each(function() {
+					ids.push(jQuery(this).attr('data-attechment-id'));
+				});
+				jQuery('.multi-upload-medias').find('input[type="hidden"]').attr('value', ids);
+			});
+		})
+	</script>
+
+	<?php
+}
+
+
+function multi_media_uploader_field($name, $value = '') {
+	$image = '">Add Media';
+	$image_str = '';
+	$image_size = 'full';
+	$display = 'none';
+	$value = explode(',', $value);
+
+	if (!empty($value)) {
+		foreach ($value as $values) {
+			if ($image_attributes = wp_get_attachment_image_src($values, $image_size)) {
+				$image_str .= '<li data-attechment-id=' . $values . '><a href="' . $image_attributes[0] . '" target="_blank"><img src="' . $image_attributes[0] . '" /></a><i class="dashicons dashicons-no delete-img"></i></li>';
+			}
+		}
+
+	}
+
+	if($image_str){
+		$display = 'inline-block';
+	}
+
+	return '<div class="multi-upload-medias"><ul>' . $image_str . '</ul><a href="#" class="wc_multi_upload_image_button button' . $image . '</a><input type="hidden" class="attechments-ids ' . $name . '" name="' . $name . '" id="' . $name . '" value="' . esc_attr(implode(',', $value)) . '" /><a href="#" class="wc_multi_remove_image_button button" style="display:inline-block;display:' . $display . '">Remove media</a></div>';
+}
+
+// Save Meta Box values.
+add_action( 'save_post', 'wc_meta_box_save' );
+
+function wc_meta_box_save( $post_id ) {
+	if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;	
+	}
+
+	if( !current_user_can( 'edit_post' ) ){
+		return;	
+	}
+	
+	if( isset( $_POST['post_banner_img'] ) ){
+		update_post_meta( $post_id, 'post_banner_img', $_POST['post_banner_img'] );
+	}
+}
+ 
